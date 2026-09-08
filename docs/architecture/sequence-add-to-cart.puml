@@ -1,0 +1,57 @@
+@startuml AvitoKitchen_AddToCart_Hold
+title Корзина: бронь, смена заведения, правка количества
+
+actor User
+participant "kitchen-api" as API
+database "PostgreSQL" as DB
+
+User -> API: POST /cart/items {dish_id, qty}
+activate API
+API -> DB: начать транзакцию
+API -> DB: взять блюдо с блокировкой
+
+alt qty ≤ 0 или пустой dish_id
+  API --> User: 400
+else блюда нет
+  API --> User: 404
+else в корзине уже другое заведение
+  API -> DB: откат
+  API --> User: 409 сначала очистите корзину
+else остатка не хватает
+  API -> DB: откат
+  API --> User: 409 нет в наличии
+else ок
+  API -> DB: сохранить позицию
+  API -> DB: бронь до now + 10 минут
+  API -> DB: сохранить
+  API --> User: 201 reservation_expires_at
+end
+deactivate API
+
+== Изменить количество / убрать / очистить ==
+
+User -> API: PATCH /cart/items/{itemId} {qty}
+
+alt уменьшили
+  API -> DB: отпустить часть брони
+  API --> User: 200
+else увеличили и остатка хватает
+  API -> DB: забронировать разницу
+  API --> User: 200
+else увеличили, остатка нет
+  API --> User: 409 количество не меняется
+end
+
+User -> API: DELETE /cart/items/{itemId}\nили DELETE /cart
+API -> DB: снять бронь
+API --> User: 204
+
+note over API, DB
+  Свободный остаток =
+  склад минус чужие живые брони.
+  Два человека не могут взять
+  последнюю порцию одновременно:
+  строка блюда блокируется в транзакции.
+end note
+
+@enduml

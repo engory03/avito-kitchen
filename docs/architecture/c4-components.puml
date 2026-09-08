@@ -1,0 +1,41 @@
+@startuml AvitoKitchen_C4_L3
+title Из чего состоит kitchen-api
+
+component "HTTP-обработчики" as Handlers
+
+component "Каталог\n(витрина ± Redis,\navailable_qty из БД)" as Catalog
+component "Корзина\n(бронь в Postgres)" as Cart
+component "Заказы\n(проверка, создание,\nключ, отмена, дедлайн)" as Order
+component "Клиент к заведению\n(уведомление, 2 сек)" as Gateway
+
+component "Работа с БД" as Repo
+database "PostgreSQL" as DB
+database "Redis" as Redis
+component "partner-demo" as Partner
+
+Handlers --> Catalog
+Handlers --> Cart
+Handlers --> Order
+
+Catalog --> Redis : витрина
+Catalog --> Repo : промах кэша\nи available_qty
+Cart --> Repo
+Order --> Repo
+Order --> Gateway : после создания заказа
+Catalog --> Redis : сброс при записи partner
+
+Repo --> DB
+Gateway --> Partner
+
+note bottom of Cart
+  Бронь и остаток только в Postgres.
+  Redis сюда не ходит.
+end note
+
+note bottom of Order
+  created + confirm_until.
+  Отмена до confirmed.
+  GET /orders/{id} → status_history.
+end note
+
+@enduml

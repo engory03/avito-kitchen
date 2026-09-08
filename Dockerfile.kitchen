@@ -1,0 +1,15 @@
+FROM golang:1.25-alpine AS build
+WORKDIR /src
+RUN apk add --no-cache git ca-certificates
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/kitchen-api ./cmd/kitchen-api
+
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates
+WORKDIR /app
+COPY --from=build /bin/kitchen-api /app/kitchen-api
+COPY migrations /app/migrations
+EXPOSE 8080
+ENTRYPOINT ["/app/kitchen-api"]

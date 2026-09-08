@@ -1,0 +1,148 @@
+@startuml AvitoKitchen_ER
+title Таблицы в базе
+
+entity restaurants {
+  * id : uuid
+  --
+  name
+  cuisine
+  is_open
+  min_order_amount_cents
+  partner_base_url
+  api_key_hash
+}
+
+entity menu_categories {
+  * id : uuid
+  --
+  * restaurant_id
+  name
+  sort_order
+}
+
+entity dishes {
+  * id : uuid
+  --
+  * restaurant_id
+  * category_id
+  external_id
+  name
+  price_cents
+  stock_qty
+  is_active
+}
+
+entity carts {
+  * id : uuid
+  --
+  * user_id
+  * restaurant_id
+}
+
+entity cart_items {
+  * id : uuid
+  --
+  * cart_id
+  * dish_id
+  qty
+}
+
+entity dish_reservations {
+  * id : uuid
+  --
+  * dish_id
+  * user_id
+  * cart_item_id
+  qty
+  expires_at
+  status
+}
+
+entity idempotency_keys {
+  * key
+  --
+  * user_id
+  request_hash
+  * order_id
+}
+
+entity orders {
+  * id : uuid
+  --
+  * user_id
+  * restaurant_id
+  status
+  total_cents
+  delivery_address
+  confirm_until
+}
+
+entity order_items {
+  * id : uuid
+  --
+  * order_id
+  dish_id
+  name_snapshot
+  price_cents_snapshot
+  qty
+}
+
+entity order_status_history {
+  * id : uuid
+  --
+  * order_id
+  from_status
+  * to_status
+  changed_by
+  reason
+}
+
+restaurants ||--o{ menu_categories
+restaurants ||--o{ dishes
+menu_categories ||--o{ dishes
+restaurants ||--o{ carts
+carts ||--o{ cart_items
+dishes ||--o{ cart_items
+cart_items ||--o{ dish_reservations
+dishes ||--o{ dish_reservations
+restaurants ||--o{ orders
+orders ||--o{ order_items
+orders ||--o{ order_status_history
+orders ||--|| idempotency_keys
+
+note right of carts
+  user_id уникален:
+  одна корзина на человека
+  и только одно заведение
+end note
+
+note right of restaurants
+  Redis не таблица БД.
+  Кэш витрины — на C4.
+end note
+
+note right of dish_reservations
+  Свободно =
+  склад минус живые брони
+end note
+
+note right of orders
+  confirm_until — дедлайн ответа.
+  delivery_address — строка для показа,
+  не логистика курьера.
+  Отмена можно в created
+  и pending_confirmation.
+  С confirmed — уже нельзя.
+end note
+
+note right of order_items
+  Имя и цена копируются
+  в заказ (меню потом изменится)
+end note
+
+note right of order_status_history
+  Отдаём в GET /orders/{id}
+  как status_history
+end note
+
+@enduml

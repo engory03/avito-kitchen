@@ -1,0 +1,1549 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API площадки доставки. Пользователь: X-User-Id. Заведение: X-Api-Key. Каталог открыт; корзина, заказы и partner без заголовка — 401.",
+        "title": "Авито.Кухня API",
+        "contact": {},
+        "version": "0.1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/api/v1/cart": {
+            "get": {
+                "security": [
+                    {
+                        "UserID": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Текущая корзина",
+                "responses": {
+                    "200": {
+                        "description": "корзина; пустые items — норма",
+                        "schema": {
+                            "$ref": "#/definitions/cart.Cart"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "UserID": []
+                    }
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Очистить корзину",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/cart/items": {
+            "post": {
+                "security": [
+                    {
+                        "UserID": []
+                    }
+                ],
+                "description": "qty \u003e 0. Чужое заведение — сначала DELETE /cart. Нет остатка — 409.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Добавить блюдо",
+                "parameters": [
+                    {
+                        "description": "блюдо и количество",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cart.AddItemRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "позиция с бронью на 10 минут",
+                        "schema": {
+                            "$ref": "#/definitions/cart.Item"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/cart/items/{itemId}": {
+            "delete": {
+                "security": [
+                    {
+                        "UserID": []
+                    }
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Убрать из корзины",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID позиции корзины",
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "UserID": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Изменить количество",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID позиции корзины",
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "новое qty \u003e 0",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cart.PatchItemRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/cart.Item"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/cart/validate": {
+            "post": {
+                "security": [
+                    {
+                        "UserID": []
+                    }
+                ],
+                "description": "status: ok, partial или invalid. Заказ не создаётся.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cart"
+                ],
+                "summary": "Проверить корзину",
+                "responses": {
+                    "200": {
+                        "description": "смотри status, invalid_items.reason, blockers",
+                        "schema": {
+                            "$ref": "#/definitions/cart.ValidateResult"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/orders": {
+            "post": {
+                "security": [
+                    {
+                        "UserID": []
+                    }
+                ],
+                "description": "Ключ идемпотентности обязателен. Создание ещё раз проверяет бронь и остатки. Смотри поле error (400/401/500) или status+invalid_items+blockers (409/422).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Создать заказ",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ключ идемпотентности",
+                        "name": "Idempotency-Key",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "адрес и accept_partial",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/order.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "тот же заказ по Idempotency-Key (replay)",
+                        "schema": {
+                            "$ref": "#/definitions/order.Order"
+                        }
+                    },
+                    "201": {
+                        "description": "новый заказ",
+                        "schema": {
+                            "$ref": "#/definitions/order.Order"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/cart.PartialResult"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/cart.InvalidResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/orders/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "UserID": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Статус, состав и история заказа",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID заказа",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "если вышел confirm_until — status уже cancelled",
+                        "schema": {
+                            "$ref": "#/definitions/order.Order"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/orders/{id}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "UserID": []
+                    }
+                ],
+                "description": "После confirmed отмена недоступна (409). Остаток возвращается.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Отменить заказ",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID заказа",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "заказ cancelled, остаток возвращён",
+                        "schema": {
+                            "$ref": "#/definitions/order.Order"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/partner/dishes/{externalId}": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ],
+                "description": "Если is_active=false, живые брони на блюдо снимаются.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "partner"
+                ],
+                "summary": "Обновить остаток или снять блюдо с меню",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "external_id блюда у заведения",
+                        "name": "externalId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "stock_qty и/или is_active",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/catalog.PatchDishRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.StatusOK"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/partner/menu": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "partner"
+                ],
+                "summary": "Загрузить меню и остатки",
+                "parameters": [
+                    {
+                        "description": "меню",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/catalog.PartnerMenuIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.StatusOK"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/partner/orders": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "partner"
+                ],
+                "summary": "Список заказов для заведения",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "RFC3339",
+                        "name": "since",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "фильтр статуса",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/order.ListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/partner/orders/{id}/status": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "partner"
+                ],
+                "summary": "Сменить статус заказа",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID заказа",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "новый статус",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/order.SetStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/order.Order"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/partner/restaurant": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKey": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "partner"
+                ],
+                "summary": "Открыть или закрыть заведение",
+                "parameters": [
+                    {
+                        "description": "is_open",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/catalog.PatchRestaurantRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.StatusOK"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/restaurants": {
+            "get": {
+                "description": "Пустой список — нормальный 200. Витрина может читаться из Redis.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "catalog"
+                ],
+                "summary": "Список заведений",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "фильтр по кухне",
+                        "name": "cuisine",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "только открытые",
+                        "name": "open_only",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/catalog.ListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/restaurants/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "catalog"
+                ],
+                "summary": "Карточка заведения",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID заведения",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/catalog.Restaurant"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/restaurants/{id}/menu": {
+            "get": {
+                "description": "Пустое меню — нормальный 200. available_qty = склад минус живые брони.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "catalog"
+                ],
+                "summary": "Меню заведения",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "ID заведения",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/catalog.Menu"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{userId}/orders": {
+            "get": {
+                "security": [
+                    {
+                        "UserID": []
+                    }
+                ],
+                "description": "Пустой список — нормальный 200. X-User-Id должен совпадать с userId.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "summary": "История заказов пользователя",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "тот же user id",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/order.ListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.ErrorBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Проверка живости сервиса",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpserver.HealthResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "cart.AddItemRequest": {
+            "type": "object",
+            "properties": {
+                "dish_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "qty": {
+                    "type": "integer"
+                }
+            }
+        },
+        "cart.Cart": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cart.Item"
+                    }
+                },
+                "restaurant_id": {
+                    "type": "string",
+                    "format": "uuid"
+                }
+            }
+        },
+        "cart.InvalidItem": {
+            "type": "object",
+            "properties": {
+                "dish_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "qty": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "reason": {
+                    "type": "string",
+                    "enum": [
+                        "reservation_expired",
+                        "out_of_stock",
+                        "dish_inactive"
+                    ],
+                    "example": "out_of_stock"
+                }
+            }
+        },
+        "cart.InvalidResult": {
+            "type": "object",
+            "properties": {
+                "blockers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "restaurant_closed",
+                            "below_min_order",
+                            "empty_cart"
+                        ]
+                    }
+                },
+                "invalid_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cart.InvalidItem"
+                    }
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "invalid"
+                    ],
+                    "example": "invalid"
+                },
+                "valid_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cart.Item"
+                    }
+                }
+            }
+        },
+        "cart.Item": {
+            "type": "object",
+            "properties": {
+                "cart_item_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "dish_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "qty": {
+                    "type": "integer"
+                },
+                "reservation_expires_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "cart.PartialResult": {
+            "type": "object",
+            "properties": {
+                "blockers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "invalid_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cart.InvalidItem"
+                    }
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "partial"
+                    ],
+                    "example": "partial"
+                },
+                "valid_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cart.Item"
+                    }
+                }
+            }
+        },
+        "cart.PatchItemRequest": {
+            "type": "object",
+            "properties": {
+                "qty": {
+                    "type": "integer"
+                }
+            }
+        },
+        "cart.ValidateResult": {
+            "type": "object",
+            "properties": {
+                "blockers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "restaurant_closed",
+                            "below_min_order",
+                            "empty_cart"
+                        ]
+                    }
+                },
+                "invalid_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cart.InvalidItem"
+                    }
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "ok",
+                        "partial",
+                        "invalid"
+                    ],
+                    "example": "ok"
+                },
+                "valid_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cart.Item"
+                    }
+                }
+            }
+        },
+        "catalog.Category": {
+            "type": "object",
+            "properties": {
+                "dishes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/catalog.Dish"
+                    }
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                }
+            }
+        },
+        "catalog.Dish": {
+            "type": "object",
+            "properties": {
+                "available_qty": {
+                    "type": "integer"
+                },
+                "external_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price_cents": {
+                    "type": "integer"
+                }
+            }
+        },
+        "catalog.ListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/catalog.Restaurant"
+                    }
+                }
+            }
+        },
+        "catalog.Menu": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/catalog.Category"
+                    }
+                },
+                "restaurant_id": {
+                    "type": "string",
+                    "format": "uuid"
+                }
+            }
+        },
+        "catalog.PartnerCategoryIn": {
+            "type": "object",
+            "properties": {
+                "dishes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/catalog.PartnerDishIn"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                }
+            }
+        },
+        "catalog.PartnerDishIn": {
+            "type": "object",
+            "properties": {
+                "external_id": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price_cents": {
+                    "type": "integer"
+                },
+                "stock_qty": {
+                    "type": "integer"
+                }
+            }
+        },
+        "catalog.PartnerMenuIn": {
+            "type": "object",
+            "properties": {
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/catalog.PartnerCategoryIn"
+                    }
+                },
+                "restaurant": {
+                    "$ref": "#/definitions/catalog.PartnerRestaurantIn"
+                }
+            }
+        },
+        "catalog.PartnerRestaurantIn": {
+            "type": "object",
+            "properties": {
+                "cuisine": {
+                    "type": "string"
+                },
+                "is_open": {
+                    "type": "boolean"
+                },
+                "min_order_amount_cents": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "partner_base_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "catalog.PatchDishRequest": {
+            "type": "object",
+            "properties": {
+                "is_active": {
+                    "type": "boolean"
+                },
+                "stock_qty": {
+                    "type": "integer"
+                }
+            }
+        },
+        "catalog.PatchRestaurantRequest": {
+            "type": "object",
+            "properties": {
+                "is_open": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "catalog.Restaurant": {
+            "type": "object",
+            "properties": {
+                "cuisine": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "is_open": {
+                    "type": "boolean"
+                },
+                "min_order_amount_cents": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "httpserver.ErrorBody": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "message"
+                }
+            }
+        },
+        "httpserver.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "service": {
+                    "type": "string",
+                    "example": "kitchen-api"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "httpserver.StatusOK": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "order.CreateRequest": {
+            "type": "object",
+            "properties": {
+                "accept_partial": {
+                    "type": "boolean"
+                },
+                "delivery_address": {
+                    "type": "string"
+                }
+            }
+        },
+        "order.HistoryItem": {
+            "type": "object",
+            "properties": {
+                "changed_by": {
+                    "type": "string",
+                    "enum": [
+                        "user",
+                        "restaurant",
+                        "system"
+                    ]
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "from_status": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "to_status": {
+                    "type": "string"
+                }
+            }
+        },
+        "order.Item": {
+            "type": "object",
+            "properties": {
+                "dish_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price_cents": {
+                    "type": "integer"
+                },
+                "qty": {
+                    "type": "integer"
+                }
+            }
+        },
+        "order.ListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/order.Order"
+                    }
+                }
+            }
+        },
+        "order.Order": {
+            "type": "object",
+            "properties": {
+                "confirm_until": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "delivery_address": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/order.Item"
+                    }
+                },
+                "restaurant_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "created",
+                        "pending_confirmation",
+                        "confirmed",
+                        "cooking",
+                        "delivering",
+                        "completed",
+                        "cancelled",
+                        "rejected"
+                    ]
+                },
+                "status_history": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/order.HistoryItem"
+                    }
+                },
+                "total_cents": {
+                    "type": "integer"
+                }
+            }
+        },
+        "order.SetStatusRequest": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "confirmed",
+                        "rejected",
+                        "cooking",
+                        "delivering",
+                        "completed"
+                    ]
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "ApiKey": {
+            "type": "apiKey",
+            "name": "X-Api-Key",
+            "in": "header"
+        },
+        "UserID": {
+            "type": "apiKey",
+            "name": "X-User-Id",
+            "in": "header"
+        }
+    }
+}

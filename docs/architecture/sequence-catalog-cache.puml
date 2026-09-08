@@ -1,0 +1,53 @@
+@startuml AvitoKitchen_Catalog_Cache
+title Каталог: кэш витрины и живой остаток
+
+actor User
+participant "kitchen-api" as API
+database "Redis" as Redis
+database "PostgreSQL" as DB
+
+== GET /restaurants ==
+
+User -> API: GET /restaurants
+activate API
+API -> Redis: есть копия списка?
+
+alt да
+  Redis --> API: карточки заведений
+else нет или Redis не ответил
+  API -> DB: прочитать заведения
+  API -> Redis: сохранить список\n(если Redis жив)
+end
+API --> User: список (без available_qty)
+deactivate API
+
+== GET /restaurants/{id}/menu ==
+
+User -> API: GET меню
+activate API
+API -> Redis: есть копия витрины?
+
+alt да
+  Redis --> API: имя, цена, is_active
+else нет или Redis не ответил
+  API -> DB: прочитать меню
+  API -> Redis: сохранить витрину\n(если Redis жив)
+end
+
+API -> DB: available_qty =\nstock минус живые брони
+API --> User: меню + живой остаток
+deactivate API
+
+== Partner меняет меню / stock / открыто ==
+
+participant "partner-demo" as Partner
+Partner -> API: PUT/PATCH меню или блюдо
+API -> DB: сохранить
+API -> Redis: сбросить витрину этого заведения
+
+note over API, Redis
+  В кэш не попадают:
+  корзина, брони, заказы, available_qty.
+end note
+
+@enduml

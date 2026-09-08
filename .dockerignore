@@ -1,0 +1,9 @@
+.git
+.cursor
+bin
+*.exe
+*.out
+coverage*
+.env
+openspec
+agent-transcripts

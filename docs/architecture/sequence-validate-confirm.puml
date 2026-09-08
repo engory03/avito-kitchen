@@ -1,0 +1,89 @@
+@startuml AvitoKitchen_Validate_Confirm
+title Проверка корзины → создание заказа → ответ заведения
+
+actor User
+participant "kitchen-api" as API
+database "PostgreSQL" as DB
+participant "partner-demo" as Partner
+
+== Проверка (заказ ещё не создаём) ==
+
+User -> API: POST /cart/validate
+activate API
+API -> DB: корзина, брони, остатки, открыто ли заведение
+API --> User: ok / partial / invalid\n+ invalid_items.reason\n+ blockers
+deactivate API
+
+note right of User
+  reason: reservation_expired /
+  out_of_stock / dish_inactive
+  blockers: restaurant_closed /
+  below_min_order / empty_cart
+  Можно подождать.
+  При создании заказа
+  проверка делается заново.
+end note
+
+== Создание заказа ==
+
+User -> API: POST /orders\nIdempotency-Key\naccept_partial?
+activate API
+API -> DB: начать транзакцию
+
+alt такой ключ уже был
+  API --> User: 200 тот же заказ
+else новый ключ
+  API -> DB: снова проверить брони и остатки
+
+  alt нельзя создать
+    API --> User: ошибка + что не так
+  else можно (всё или часть)
+    API -> DB: заказ status = created\n+ позиции (имя и цена на момент заказа)\nconfirm_until = now + 15 мин
+    API -> DB: брони → использованы,\nостаток на складе уменьшен
+    API -> DB: запись в историю статусов
+    API -> DB: сохранить
+
+    API -> Partner: notify (ждать ≤ 2 сек)
+    Partner -> Partner: сверить локальный stock\n(память процесса)
+    note right of Partner
+      200 на notify — принял.
+      confirm/reject уходит
+      отдельным POST на площадку.
+    end note
+    alt уведомление не дошло
+      API -> DB: status = pending_confirmation
+      note over API
+        Заказ у нас уже есть.
+        Отмена ещё разрешена.
+        Заведение потом само\nзапросит список.
+      end note
+    end
+
+    API --> User: 201 заказ создан
+  end
+end
+deactivate API
+
+== Пока ждём заведение ==
+
+alt пользователь отменил из created\nили pending_confirmation
+  User -> API: POST /orders/{id}/cancel
+  API -> DB: cancelled, остаток вернуть
+  API --> User: 200
+else уже confirmed (или дальше)
+  User -> API: POST /orders/{id}/cancel
+  API --> User: 409 отмена недоступна
+else дедлайн вышел, заведение молчит
+  User -> API: GET /orders/{id}
+  API -> DB: сейчас > confirm_until\n→ cancelled, остаток вернуть
+  API --> User: заказ снят по тайм-ауту
+else заведение подтвердило
+  Partner -> API: GET /partner/orders
+  Partner -> API: POST .../status confirmed
+  API -> DB: confirmed + история
+else заведение отклонило
+  Partner -> API: POST .../status rejected
+  API -> DB: rejected, остаток вернуть
+end
+
+@enduml

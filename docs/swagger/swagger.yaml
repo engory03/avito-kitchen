@@ -1,0 +1,1015 @@
+basePath: /
+definitions:
+  cart.AddItemRequest:
+    properties:
+      dish_id:
+        format: uuid
+        type: string
+      qty:
+        type: integer
+    type: object
+  cart.Cart:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/cart.Item'
+        type: array
+      restaurant_id:
+        format: uuid
+        type: string
+    type: object
+  cart.InvalidItem:
+    properties:
+      dish_id:
+        format: uuid
+        type: string
+      qty:
+        example: 1
+        type: integer
+      reason:
+        enum:
+        - reservation_expired
+        - out_of_stock
+        - dish_inactive
+        example: out_of_stock
+        type: string
+    type: object
+  cart.InvalidResult:
+    properties:
+      blockers:
+        items:
+          enum:
+          - restaurant_closed
+          - below_min_order
+          - empty_cart
+          type: string
+        type: array
+      invalid_items:
+        items:
+          $ref: '#/definitions/cart.InvalidItem'
+        type: array
+      status:
+        enum:
+        - invalid
+        example: invalid
+        type: string
+      valid_items:
+        items:
+          $ref: '#/definitions/cart.Item'
+        type: array
+    type: object
+  cart.Item:
+    properties:
+      cart_item_id:
+        format: uuid
+        type: string
+      dish_id:
+        format: uuid
+        type: string
+      qty:
+        type: integer
+      reservation_expires_at:
+        type: string
+    type: object
+  cart.PartialResult:
+    properties:
+      blockers:
+        items:
+          type: string
+        type: array
+      invalid_items:
+        items:
+          $ref: '#/definitions/cart.InvalidItem'
+        type: array
+      status:
+        enum:
+        - partial
+        example: partial
+        type: string
+      valid_items:
+        items:
+          $ref: '#/definitions/cart.Item'
+        type: array
+    type: object
+  cart.PatchItemRequest:
+    properties:
+      qty:
+        type: integer
+    type: object
+  cart.ValidateResult:
+    properties:
+      blockers:
+        items:
+          enum:
+          - restaurant_closed
+          - below_min_order
+          - empty_cart
+          type: string
+        type: array
+      invalid_items:
+        items:
+          $ref: '#/definitions/cart.InvalidItem'
+        type: array
+      status:
+        enum:
+        - ok
+        - partial
+        - invalid
+        example: ok
+        type: string
+      valid_items:
+        items:
+          $ref: '#/definitions/cart.Item'
+        type: array
+    type: object
+  catalog.Category:
+    properties:
+      dishes:
+        items:
+          $ref: '#/definitions/catalog.Dish'
+        type: array
+      id:
+        format: uuid
+        type: string
+      name:
+        type: string
+      sort_order:
+        type: integer
+    type: object
+  catalog.Dish:
+    properties:
+      available_qty:
+        type: integer
+      external_id:
+        type: string
+      id:
+        format: uuid
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      price_cents:
+        type: integer
+    type: object
+  catalog.ListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/catalog.Restaurant'
+        type: array
+    type: object
+  catalog.Menu:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/catalog.Category'
+        type: array
+      restaurant_id:
+        format: uuid
+        type: string
+    type: object
+  catalog.PartnerCategoryIn:
+    properties:
+      dishes:
+        items:
+          $ref: '#/definitions/catalog.PartnerDishIn'
+        type: array
+      name:
+        type: string
+      sort_order:
+        type: integer
+    type: object
+  catalog.PartnerDishIn:
+    properties:
+      external_id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      price_cents:
+        type: integer
+      stock_qty:
+        type: integer
+    type: object
+  catalog.PartnerMenuIn:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/catalog.PartnerCategoryIn'
+        type: array
+      restaurant:
+        $ref: '#/definitions/catalog.PartnerRestaurantIn'
+    type: object
+  catalog.PartnerRestaurantIn:
+    properties:
+      cuisine:
+        type: string
+      is_open:
+        type: boolean
+      min_order_amount_cents:
+        type: integer
+      name:
+        type: string
+      partner_base_url:
+        type: string
+    type: object
+  catalog.PatchDishRequest:
+    properties:
+      is_active:
+        type: boolean
+      stock_qty:
+        type: integer
+    type: object
+  catalog.PatchRestaurantRequest:
+    properties:
+      is_open:
+        type: boolean
+    type: object
+  catalog.Restaurant:
+    properties:
+      cuisine:
+        type: string
+      id:
+        format: uuid
+        type: string
+      is_open:
+        type: boolean
+      min_order_amount_cents:
+        type: integer
+      name:
+        type: string
+    type: object
+  httpserver.ErrorBody:
+    properties:
+      error:
+        example: message
+        type: string
+    type: object
+  httpserver.HealthResponse:
+    properties:
+      service:
+        example: kitchen-api
+        type: string
+      status:
+        example: ok
+        type: string
+    type: object
+  httpserver.StatusOK:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+  order.CreateRequest:
+    properties:
+      accept_partial:
+        type: boolean
+      delivery_address:
+        type: string
+    type: object
+  order.HistoryItem:
+    properties:
+      changed_by:
+        enum:
+        - user
+        - restaurant
+        - system
+        type: string
+      created_at:
+        type: string
+      from_status:
+        type: string
+      reason:
+        type: string
+      to_status:
+        type: string
+    type: object
+  order.Item:
+    properties:
+      dish_id:
+        format: uuid
+        type: string
+      name:
+        type: string
+      price_cents:
+        type: integer
+      qty:
+        type: integer
+    type: object
+  order.ListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/order.Order'
+        type: array
+    type: object
+  order.Order:
+    properties:
+      confirm_until:
+        type: string
+      created_at:
+        type: string
+      delivery_address:
+        type: string
+      id:
+        format: uuid
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/order.Item'
+        type: array
+      restaurant_id:
+        format: uuid
+        type: string
+      status:
+        enum:
+        - created
+        - pending_confirmation
+        - confirmed
+        - cooking
+        - delivering
+        - completed
+        - cancelled
+        - rejected
+        type: string
+      status_history:
+        items:
+          $ref: '#/definitions/order.HistoryItem'
+        type: array
+      total_cents:
+        type: integer
+    type: object
+  order.SetStatusRequest:
+    properties:
+      reason:
+        type: string
+      status:
+        enum:
+        - confirmed
+        - rejected
+        - cooking
+        - delivering
+        - completed
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: 'API площадки доставки. Пользователь: X-User-Id. Заведение: X-Api-Key.
+    Каталог открыт; корзина, заказы и partner без заголовка — 401.'
+  title: Авито.Кухня API
+  version: 0.1.0
+paths:
+  /api/v1/cart:
+    delete:
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      security:
+      - UserID: []
+      summary: Очистить корзину
+      tags:
+      - cart
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: корзина; пустые items — норма
+          schema:
+            $ref: '#/definitions/cart.Cart'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      security:
+      - UserID: []
+      summary: Текущая корзина
+      tags:
+      - cart
+  /api/v1/cart/items:
+    post:
+      consumes:
+      - application/json
+      description: qty > 0. Чужое заведение — сначала DELETE /cart. Нет остатка —
+        409.
+      parameters:
+      - description: блюдо и количество
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/cart.AddItemRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: позиция с бронью на 10 минут
+          schema:
+            $ref: '#/definitions/cart.Item'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      security:
+      - UserID: []
+      summary: Добавить блюдо
+      tags:
+      - cart
+  /api/v1/cart/items/{itemId}:
+    delete:
+      parameters:
+      - description: ID позиции корзины
+        format: uuid
+        in: path
+        name: itemId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      security:
+      - UserID: []
+      summary: Убрать из корзины
+      tags:
+      - cart
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID позиции корзины
+        format: uuid
+        in: path
+        name: itemId
+        required: true
+        type: string
+      - description: новое qty > 0
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/cart.PatchItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/cart.Item'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      security:
+      - UserID: []
+      summary: Изменить количество
+      tags:
+      - cart
+  /api/v1/cart/validate:
+    post:
+      description: 'status: ok, partial или invalid. Заказ не создаётся.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: смотри status, invalid_items.reason, blockers
+          schema:
+            $ref: '#/definitions/cart.ValidateResult'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      security:
+      - UserID: []
+      summary: Проверить корзину
+      tags:
+      - cart
+  /api/v1/orders:
+    post:
+      consumes:
+      - application/json
+      description: Ключ идемпотентности обязателен. Создание ещё раз проверяет бронь
+        и остатки. Смотри поле error (400/401/500) или status+invalid_items+blockers
+        (409/422).
+      parameters:
+      - description: ключ идемпотентности
+        in: header
+        name: Idempotency-Key
+        required: true
+        type: string
+      - description: адрес и accept_partial
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/order.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: тот же заказ по Idempotency-Key (replay)
+          schema:
+            $ref: '#/definitions/order.Order'
+        "201":
+          description: новый заказ
+          schema:
+            $ref: '#/definitions/order.Order'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/cart.PartialResult'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/cart.InvalidResult'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      security:
+      - UserID: []
+      summary: Создать заказ
+      tags:
+      - orders
+  /api/v1/orders/{id}:
+    get:
+      parameters:
+      - description: ID заказа
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: если вышел confirm_until — status уже cancelled
+          schema:
+            $ref: '#/definitions/order.Order'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      security:
+      - UserID: []
+      summary: Статус, состав и история заказа
+      tags:
+      - orders
+  /api/v1/orders/{id}/cancel:
+    post:
+      description: После confirmed отмена недоступна (409). Остаток возвращается.
+      parameters:
+      - description: ID заказа
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: заказ cancelled, остаток возвращён
+          schema:
+            $ref: '#/definitions/order.Order'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      security:
+      - UserID: []
+      summary: Отменить заказ
+      tags:
+      - orders
+  /api/v1/partner/dishes/{externalId}:
+    patch:
+      consumes:
+      - application/json
+      description: Если is_active=false, живые брони на блюдо снимаются.
+      parameters:
+      - description: external_id блюда у заведения
+        in: path
+        name: externalId
+        required: true
+        type: string
+      - description: stock_qty и/или is_active
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/catalog.PatchDishRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.StatusOK'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      security:
+      - ApiKey: []
+      summary: Обновить остаток или снять блюдо с меню
+      tags:
+      - partner
+  /api/v1/partner/menu:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: меню
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/catalog.PartnerMenuIn'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.StatusOK'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      security:
+      - ApiKey: []
+      summary: Загрузить меню и остатки
+      tags:
+      - partner
+  /api/v1/partner/orders:
+    get:
+      parameters:
+      - description: RFC3339
+        format: date-time
+        in: query
+        name: since
+        type: string
+      - description: фильтр статуса
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/order.ListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      security:
+      - ApiKey: []
+      summary: Список заказов для заведения
+      tags:
+      - partner
+  /api/v1/partner/orders/{id}/status:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID заказа
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: новый статус
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/order.SetStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/order.Order'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      security:
+      - ApiKey: []
+      summary: Сменить статус заказа
+      tags:
+      - partner
+  /api/v1/partner/restaurant:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: is_open
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/catalog.PatchRestaurantRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.StatusOK'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      security:
+      - ApiKey: []
+      summary: Открыть или закрыть заведение
+      tags:
+      - partner
+  /api/v1/restaurants:
+    get:
+      description: Пустой список — нормальный 200. Витрина может читаться из Redis.
+      parameters:
+      - description: фильтр по кухне
+        in: query
+        name: cuisine
+        type: string
+      - description: только открытые
+        in: query
+        name: open_only
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/catalog.ListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      summary: Список заведений
+      tags:
+      - catalog
+  /api/v1/restaurants/{id}:
+    get:
+      parameters:
+      - description: ID заведения
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/catalog.Restaurant'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      summary: Карточка заведения
+      tags:
+      - catalog
+  /api/v1/restaurants/{id}/menu:
+    get:
+      description: Пустое меню — нормальный 200. available_qty = склад минус живые
+        брони.
+      parameters:
+      - description: ID заведения
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/catalog.Menu'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      summary: Меню заведения
+      tags:
+      - catalog
+  /api/v1/users/{userId}/orders:
+    get:
+      description: Пустой список — нормальный 200. X-User-Id должен совпадать с userId.
+      parameters:
+      - description: тот же user id
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/order.ListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpserver.ErrorBody'
+      security:
+      - UserID: []
+      summary: История заказов пользователя
+      tags:
+      - orders
+  /health:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpserver.HealthResponse'
+      summary: Проверка живости сервиса
+      tags:
+      - health
+securityDefinitions:
+  ApiKey:
+    in: header
+    name: X-Api-Key
+    type: apiKey
+  UserID:
+    in: header
+    name: X-User-Id
+    type: apiKey
+swagger: "2.0"

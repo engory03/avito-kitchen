@@ -1,0 +1,562 @@
+openapi: 3.0.3
+info:
+  title: Авито.Кухня API
+  version: 0.1.0
+  description: |
+    MVP площадки доставки еды.
+    Пользователь передаёт X-User-Id.
+    Заведение передаёт X-Api-Key.
+servers:
+  - url: http://localhost:8080/api/v1
+tags:
+  - name: catalog
+  - name: cart
+  - name: orders
+  - name: partner
+
+paths:
+  /restaurants:
+    get:
+      tags: [catalog]
+      summary: Список заведений (пустой список — нормальный 200)
+      parameters:
+        - in: query
+          name: cuisine
+          schema: { type: string }
+        - in: query
+          name: open_only
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Restaurant" }
+
+  /restaurants/{id}:
+    get:
+      tags: [catalog]
+      summary: Карточка заведения
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Restaurant" }
+        "404":
+          description: Не найдено
+
+  /restaurants/{id}/menu:
+    get:
+      tags: [catalog]
+      summary: Меню заведения (пустое меню — нормальный 200)
+      parameters:
+        - $ref: "#/components/parameters/RestaurantId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Menu" }
+        "404":
+          description: Не найдено
+
+  /cart:
+    get:
+      tags: [cart]
+      summary: Текущая корзина
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Cart" }
+    delete:
+      tags: [cart]
+      summary: Очистить корзину (снять все брони)
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "204":
+          description: Корзина пустая, брони отпущены
+
+  /cart/items:
+    post:
+      tags: [cart]
+      summary: Добавить блюдо (создаёт бронь на 10 минут)
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AddCartItemRequest" }
+      responses:
+        "201":
+          description: Добавлено
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CartItem" }
+        "400":
+          description: qty ≤ 0 или невалидный dish_id
+        "404":
+          description: Блюда нет
+        "409":
+          description: Нет остатка или в корзине другое заведение (сначала DELETE /cart)
+        "422":
+          description: Заведение закрыто или блюдо снято с меню
+
+  /cart/items/{itemId}:
+    patch:
+      tags: [cart]
+      summary: Изменить количество (уменьшить — отпустить бронь; увеличить — добрать остаток или 409)
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/CartItemId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [qty]
+              properties:
+                qty: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CartItem" }
+        "400":
+          description: qty ≤ 0
+        "404":
+          description: Позиции нет
+        "409":
+          description: Не хватает остатка на увеличение; прежнее количество не меняется
+    delete:
+      tags: [cart]
+      summary: Убрать из корзины (снять бронь)
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/CartItemId"
+      responses:
+        "204":
+          description: Удалено
+
+  /cart/validate:
+    post:
+      tags: [cart]
+      summary: Проверить корзину без создания заказа
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: Результат проверки
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidateCartResponse" }
+
+  /orders:
+    post:
+      tags: [orders]
+      summary: Создать заказ (ключ идемпотентности обязателен)
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateOrderRequest" }
+      responses:
+        "201":
+          description: Заказ создан
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+        "200":
+          description: Тот же заказ по ключу идемпотентности
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+        "409":
+          description: Часть позиций нельзя, accept_partial=false
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidateCartResponse" }
+        "422":
+          description: Заказ нельзя создать
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidateCartResponse" }
+
+  /orders/{id}:
+    get:
+      tags: [orders]
+      summary: Статус, состав и история статусов (если вышел confirm_until — уже cancelled)
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/OrderId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+
+  /orders/{id}/cancel:
+    post:
+      tags: [orders]
+      summary: Отменить заказ из created или pending_confirmation
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - $ref: "#/components/parameters/OrderId"
+      responses:
+        "200":
+          description: Заказ отменён, остаток возвращён
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+        "409":
+          description: Уже confirmed (и дальше) — отмена недоступна
+
+  /users/{userId}/orders:
+    get:
+      tags: [orders]
+      summary: История заказов пользователя (пустой список — нормальный 200)
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Order" }
+
+  /partner/menu:
+    put:
+      tags: [partner]
+      summary: Загрузить меню и остатки
+      parameters:
+        - $ref: "#/components/parameters/ApiKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PartnerMenuUpsert" }
+      responses:
+        "200":
+          description: Меню сохранено
+
+  /partner/restaurant:
+    patch:
+      tags: [partner]
+      summary: Открыть или закрыть заведение
+      parameters:
+        - $ref: "#/components/parameters/ApiKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [is_open]
+              properties:
+                is_open: { type: boolean }
+      responses:
+        "200":
+          description: OK
+
+  /partner/dishes/{externalId}:
+    patch:
+      tags: [partner]
+      summary: Обновить остаток или снять блюдо с меню
+      parameters:
+        - $ref: "#/components/parameters/ApiKey"
+        - in: path
+          name: externalId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stock_qty: { type: integer, minimum: 0 }
+                is_active: { type: boolean }
+      responses:
+        "200":
+          description: OK. Если is_active=false, живые брони на блюдо снимаются
+        "404":
+          description: Такого external_id у заведения нет
+
+  /partner/orders:
+    get:
+      tags: [partner]
+      summary: Список заказов для заведения
+      parameters:
+        - $ref: "#/components/parameters/ApiKey"
+        - in: query
+          name: since
+          schema: { type: string, format: date-time }
+        - in: query
+          name: status
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+
+  /partner/orders/{id}/status:
+    post:
+      tags: [partner]
+      summary: Сменить статус заказа
+      parameters:
+        - $ref: "#/components/parameters/ApiKey"
+        - $ref: "#/components/parameters/OrderId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [confirmed, rejected, cooking, delivering, completed]
+                reason: { type: string }
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: Такого заказа нет
+        "409":
+          description: Нельзя сменить статус из текущего (или заказ уже cancelled по дедлайну)
+
+components:
+  parameters:
+    UserId:
+      in: header
+      name: X-User-Id
+      required: true
+      schema: { type: string }
+    ApiKey:
+      in: header
+      name: X-Api-Key
+      required: true
+      schema: { type: string }
+    RestaurantId:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+    CartItemId:
+      in: path
+      name: itemId
+      required: true
+      schema: { type: string, format: uuid }
+    OrderId:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+
+  schemas:
+    Restaurant:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        cuisine: { type: string }
+        is_open: { type: boolean }
+        min_order_amount_cents: { type: integer }
+
+    Dish:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        external_id: { type: string }
+        name: { type: string }
+        price_cents: { type: integer }
+        available_qty:
+          type: integer
+          description: Склад минус живые брони. Считается из Postgres, не из Redis
+        is_active: { type: boolean }
+
+    MenuCategory:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        sort_order: { type: integer }
+        dishes:
+          type: array
+          items: { $ref: "#/components/schemas/Dish" }
+
+    Menu:
+      type: object
+      properties:
+        restaurant_id: { type: string, format: uuid }
+        categories:
+          type: array
+          items: { $ref: "#/components/schemas/MenuCategory" }
+
+    AddCartItemRequest:
+      type: object
+      required: [dish_id, qty]
+      properties:
+        dish_id: { type: string, format: uuid }
+        qty: { type: integer, minimum: 1 }
+
+    CartItem:
+      type: object
+      properties:
+        cart_item_id: { type: string, format: uuid }
+        dish_id: { type: string, format: uuid }
+        qty: { type: integer }
+        reservation_expires_at: { type: string, format: date-time }
+
+    Cart:
+      type: object
+      properties:
+        restaurant_id: { type: string, format: uuid }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/CartItem" }
+
+    ValidateCartResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, partial, invalid]
+        valid_items:
+          type: array
+          items: { $ref: "#/components/schemas/CartItem" }
+        invalid_items:
+          type: array
+          items:
+            type: object
+            properties:
+              dish_id: { type: string, format: uuid }
+              qty: { type: integer }
+              reason:
+                type: string
+                enum: [reservation_expired, out_of_stock, dish_inactive]
+        blockers:
+          type: array
+          items:
+            type: string
+            enum: [restaurant_closed, below_min_order, empty_cart]
+
+    CreateOrderRequest:
+      type: object
+      properties:
+        accept_partial: { type: boolean, default: false }
+        delivery_address:
+          type: string
+          description: Строка для отображения в статусе «в доставке», не логистика курьера
+
+    OrderItem:
+      type: object
+      properties:
+        dish_id: { type: string, format: uuid }
+        name: { type: string }
+        price_cents: { type: integer }
+        qty: { type: integer }
+
+    Order:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        restaurant_id: { type: string, format: uuid }
+        status:
+          type: string
+          enum:
+            - created
+            - pending_confirmation
+            - confirmed
+            - cooking
+            - delivering
+            - completed
+            - cancelled
+            - rejected
+        total_cents: { type: integer }
+        delivery_address:
+          type: string
+          description: Строка для отображения, не логистика курьера
+        confirm_until:
+          type: string
+          format: date-time
+          description: До этого момента ждём подтверждение заведения
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/OrderItem" }
+        status_history:
+          type: array
+          items: { $ref: "#/components/schemas/StatusHistoryItem" }
+        created_at: { type: string, format: date-time }
+
+    StatusHistoryItem:
+      type: object
+      properties:
+        from_status: { type: string, nullable: true }
+        to_status: { type: string }
+        changed_by:
+          type: string
+          enum: [user, restaurant, system]
+        reason: { type: string }
+        created_at: { type: string, format: date-time }
+
+    PartnerMenuUpsert:
+      type: object
+      properties:
+        restaurant:
+          type: object
+          properties:
+            name: { type: string }
+            cuisine: { type: string }
+            min_order_amount_cents: { type: integer }
+            is_open: { type: boolean }
+            partner_base_url: { type: string }
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              sort_order: { type: integer }
+              dishes:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    external_id: { type: string }
+                    name: { type: string }
+                    price_cents: { type: integer }
+                    stock_qty: { type: integer }
+                    is_active: { type: boolean }

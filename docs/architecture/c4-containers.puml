@@ -1,0 +1,33 @@
+@startuml AvitoKitchen_C4_L2
+title Какие части системы есть (C4, уровень контейнеров)
+
+actor "Web-клиент\n(мы его не пишем)" as Client
+actor "Сотрудник заведения\n(через API демо)" as Staff
+
+rectangle "Docker Compose" {
+  component "kitchen-api\n(Go)\nглавный сервис площадки" as Kitchen
+  component "partner-demo\n(Go)\nменю и сток в памяти" as Partner
+  database "PostgreSQL\nостатки, брони, заказы, меню" as DB
+  database "Redis\nкэш витрины каталога" as Redis
+}
+
+Client --> Kitchen : JSON API\nX-User-Id
+Staff --> Partner
+Partner --> Kitchen : меню, остатки,\nconfirm/reject\n(X-Api-Key)
+Kitchen --> Partner : «новый заказ»\n(HTTP, 2 сек)
+Kitchen --> DB : SQL
+Kitchen --> Redis : GET/SET витрины\n(не брони и не заказы)
+
+note bottom of Kitchen
+  Дедлайн подтверждения (15 мин)
+  и бронь корзины (10 мин) —
+  только Postgres.
+end note
+
+note bottom of Redis
+  Если Redis молчит —
+  каталог из Postgres.
+  available_qty в кэш не кладём.
+end note
+
+@enduml
