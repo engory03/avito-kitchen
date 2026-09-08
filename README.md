@@ -52,11 +52,13 @@ MVP API-площадки доставки еды: каталог, корзина
 
 ### Поднять стек
 
+С помощью Docker:
+
 ```bash
 docker compose up -d --build
 ```
 
-То же через обёртки (одинаковые цели в [Makefile](Makefile) и [tasks.ps1](tasks.ps1)):
+Или локально (одинаковые команды в [Makefile](Makefile) и [tasks.ps1](tasks.ps1)):
 
 ```bash
 make up
